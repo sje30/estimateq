@@ -1,0 +1,163 @@
+---
+title: "Estimating pi (Quarto method)"
+author: "Stephen Eglen"
+date: today
+bibliography: refs.bib
+---
+
+This is an example document created using the quarto system
+<https://quarto.org>.  For this document, the master file is
+`estimateq.qmd`.  This is processed by quarto using the following
+shell command
+
+```{bash}
+#| eval: false
+quarto render estimateq.qmd
+```
+
+Within RStudio, there is a handy "Knit HTML"  button.
+
+
+# Preamble
+
+
+```{r setup,collapse=TRUE}
+require(knitr) ## for kable
+```
+
+TODO: does quarto allow for caching?
+
+#  Task: estimate the value of $\pi$
+
+Our task is to estimate the value of $\pi$ by simulating darts being
+thrown at a dartboard.  Imagine that the person throwing the darts is
+not very good, and randomly throws each dart so that it falls
+uniformly within a square of side length $2r$, with the dartboard of
+radius $r$ centred within that square.  If the player throws $n$
+darts, and $d$ of them hit the dartboard, then for large enough $n$,
+the ratio $d/n$ should approximate the ratio of the area of the
+dartboard to the enclosing square, $\pi r^2 / 4 r^2 \equiv \pi/4$.
+From this, we can estimate $\pi \approx 4d/n$.
+
+We start with an example, shown in @fig-dartboard, using R to draw both the dartboard and the
+surrounding square, together with `n=50` darts.  The radius of the
+dartboard here is 1 unit, although the value is not important.
+
+```{r}
+#| label: fig-dartboard
+#| fig-cap: example dartboard.
+r <- 1
+n <- 50
+par(las=1)
+plot(NA, xlim=c(-r,r), ylim=c(-r,r), asp=1, bty='n',
+     xaxt='n', yaxt='n', xlab='', ylab='')
+axis(1, at=c(-r,0,r)); axis(2, at=c(-r,0,r))
+symbols(x=0, y=0, circles=r, inch=F, add=T)
+x <- runif(n, -r, r);  y <- runif(n, -r, r)
+inside <- (x^2 + y^2) < r^2
+d <- sum(inside)
+points(x, y, pch=ifelse(inside, 19, 4))
+rect(-r, -r, r, r, border='blue', lwd=2)
+```
+
+A dart is drawn as a filled circle if it falls within the dartboard,
+else it is drawn as a cross.  In this case the number of darts within
+the circle is `r d`, and so the estimated value is $\pi \approx
+`r {4*d/n}`$.
+
+The estimate of $\pi$ should improve as we increase the number of darts
+thrown at the dartboard.  To verify this, we write a short function
+that, given the number of darts to throw, $n$, returns an estimate of
+$\pi$.
+
+```{r}
+estimate.pi <- function(n=1000) {
+  ## Return an estimate of PI using dartboard 
+  ## method with N trials.
+  r <- 1 ## radius of dartboard
+  x <- runif(n, min=-r, max=r)
+  y <- runif(n, min=-r, max=r)
+  l <- sqrt(x^2 + y^2)
+  d <- sum(l<r)
+  4*d/n
+}
+```
+
+We can then test the procedure a few times, using the default number
+of darts, 1000:
+
+```{r}
+replicate(9, estimate.pi())
+```
+Finally, for a given value of $n$, we can show 99 estimates of $\pi$,
+as clearly the estimate will vary from run to run.  In @fig-estimates we compare the estimates of $\pi$ for three
+different values of $n$.
+
+
+```{r}
+#| fig-cap: Estimates of Pi as we increase number of darts
+#| label: fig-estimates
+ns <- 10^c(2,3,4)
+res <- lapply(ns, function(n) replicate(99, estimate.pi(n)))
+par(las=1, bty='n')
+stripchart(res, method="jitter", group.names=ns, 
+           xlab="number of darts",
+           ylab=expression(paste('estimate of ', pi)),
+           vert=TRUE, pch=20, cex=0.5)
+abline(h=pi, col='red')
+```
+
+# Example table output
+
+Here is a simple table.
+
+```{r}
+df = data.frame(name=c("joe", "ann", "bob"),
+  age=c(19, 24, 27),
+  height=c(1.8, 1.75, 1.7))
+df
+```
+
+Or you can add a caption as shown in @tbl-example:
+
+```{r}
+#| label: tbl-example
+#| echo: false
+#| tbl-cap: Example output from kable function (part of knitr)
+kable(df, format="markdown")
+```
+
+[Further information on tables](https://quarto.org/docs/authoring/tables.html#computations)
+
+# References to literature
+
+Bookdown can refer to references.  For example, this is the original
+citation for R [@Ihaka1996].  For more details regarding knitr, check
+out the book [@knitrbook].
+
+
+[Further information on citations](https://quarto.org/docs/authoring/footnotes-and-citations.html)
+
+# Exercises
+
+1. Add an extra set of trials for n=10 darts thrown.
+
+2. Experiment switching the cache on (Section \@ref(caching)).  Where
+   are the intermediate results stored?  When is the code rerun?
+
+3. Add another reference to the document.  (BibTeX entries can be
+   downloaded from Google Scholar, amongst other places.)
+
+4. Can you get pdf output as well as HTML output?  (Hint: check Makefile)
+
+5. Explore the printr package for printing tables and matrices <https://yihui.name/printr/>.
+
+
+## Compiling this document
+
+```{r eval=FALSE}
+quarto render estimateq.qmd
+quarto_render("estimateq.qmd", output_format="pdf")
+```
+
+# References
